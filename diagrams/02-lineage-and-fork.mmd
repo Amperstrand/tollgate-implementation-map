@@ -1,0 +1,29 @@
+flowchart LR
+    ROOT["TollGate v1<br/>TIP/HTTP<br/>Go reference"]
+
+    ROOT -->|"port to Rust<br/>CDK instead of gonuts<br/>2026-07-21 · 18 commits"| CLONE["tollgate-module-basic-rust<br/>🟦 V1 protocol<br/>⚠️ DORMANT 88 days"]
+    ROOT -->|"redesign<br/>vouchers + Spilman<br/>2026-04-19"| OLD["tollgate-rs<br/>(design phase)"]
+
+    OLD -->|"release 0.1.0-rc.2<br/>2026-10-13"| ORG["OpenTollGate/tollgate-rs<br/>🟧 V2 protocol"]
+    OLD -->|"branch divergence<br/>+94 commits"| AMP["Amperstrand/tollgate-rs-ai-research<br/>🟧 V2 + 🟦 V1 bridge"]
+
+    ORG -->|"OpenWrt packaging"| SUITE["tollgate-suite-wrt<br/>🟧 V2 protocol"]
+
+    AMP -.->|"**v1_compat/ 5,594 LOC**<br/>added AFTER the fork<br/>NOT in ORG"| V1BRIDGE["🟦 speaks 10021/1022/21023<br/>price_per_step · crowsnest"]
+
+    MERGE{{"common ancestor<br/>be5400f"}}
+    ORG --- MERGE
+    AMP --- MERGE
+
+    NOTIN["⛔ v1_compat is on a fork<br/>no upstream PR<br/>0 mentions in ORG repo<br/>not in corpus consumer_ids"]
+
+    V1BRIDGE --> NOTIN
+
+    classDef v1 fill:#1a3a2a,stroke:#4caf50,color:#e8f8ee
+    classDef v2 fill:#3a2a1a,stroke:#ff9800,color:#fdf0e0
+    classDef warn fill:#3a1a1a,stroke:#f44336,color:#ffe8e8
+    classDef neutral fill:#2a2a2a,stroke:#888,color:#eee
+    class CLONE,V1BRIDGE v1
+    class ORG,SUITE,OLD,AMP v2
+    class NOTIN warn
+    class ROOT,MERGE neutral

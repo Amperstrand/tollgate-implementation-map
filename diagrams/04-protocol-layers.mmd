@@ -1,0 +1,35 @@
+flowchart TB
+    subgraph L3["Medium — what physical link"]
+        WIFI01["WIFI-01 beacon advertisement<br/>⚠️ STUB — 5 lines, RESERVED"]
+    end
+    subgraph L2["Interface — how peers talk"]
+        HTTP01["HTTP-01 :2121"]
+        HTTP02["HTTP-02 /whoami"]
+        HTTP03["HTTP-03 /usage"]
+        NOSTR01["NOSTR-01 relay :4242<br/>⚠️ STUB — 5 lines, RESERVED"]
+    end
+    subgraph L1["Protocol — what the data is"]
+        TIP01["TIP-01<br/>10021 advert · 1022 session · 21023 notice"]
+        TIP02["TIP-02<br/>price_per_step · multi-mint"]
+    end
+
+    subgraph IMPL["Who implements what"]
+        direction LR
+        GO["basic-go<br/>✅ all of L1+L2"]
+        RSB["basic-rust<br/>◐ partial L1, ✅ L2"]
+        RS["tollgate-rs<br/>⛔ none of L1/L2"]
+        AMP["Amperstrand fork<br/>✅ L1 via v1_compat"]
+    end
+
+    L1 --> IMPL
+    L2 --> IMPL
+    L3 -.->|"nobody"| IMPL
+
+    classDef stub fill:#3a1a1a,stroke:#f44336,color:#ffe8e8
+    classDef ok fill:#1a3a2a,stroke:#4caf50,color:#e8f8ee
+    classDef part fill:#3a3520,stroke:#ffc107,color:#fff8e1
+    classDef none fill:#3a1a1a,stroke:#f44336,color:#ffe8e8
+    class WIFI01,NOSTR01 stub
+    class GO,AMP ok
+    class RSB part
+    class RS none
