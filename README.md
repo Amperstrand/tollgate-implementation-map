@@ -4,7 +4,9 @@ Visual map of **every** TollGate implementation: what exists, which protocol eac
 they relate. Built because the fleet is larger than it looks — **six implementations across two
 different protocols** — and the relationships were only discoverable by reading six repos.
 
-**Evidence date: 2026-10-18.** Every claim here is measured, not inferred from a README. Method and
+**Evidence date: 2026-10-18** (§1–6). **Update: 2026-10-21** (§7 — a seventh implementation went
+green, the Amperstrand fork became load-bearing, and the dormant Rust module woke up on a fork).
+Every claim here is measured, not inferred from a README. Method and
 reproduction commands: [METHOD.md](METHOD.md).
 
 ---
@@ -273,6 +275,89 @@ flowchart TB
 | `cdk-walletd` has **no packaging anywhere** yet policy points every target at its socket | `tollgate-module-basic-go` |
 | `tollgate-rs` channels are **memory-only** across restart; buyer **cannot yet pay a seller** | rc.2 release notes |
 | `tollgate-rs` is effectively **single-maintainer** (`Origami74` = 159/167 commits) | org repo |
+
+---
+
+## 7. Update 2026-10-21 — the fork becomes load-bearing
+
+Measured the same way as §1–6. Four state changes since the 2026-10-18 evidence date.
+
+### 7.1 The missing seventh implementation: `tollgate-s3-rs`
+
+`Amperstrand/tollgate-s3-rs` — Rust TollGate firmware for the LilyGo T-Display-S3
+(ESP32-S3), 🟧 **V2 family**: it speaks the CBOR protocol through `tollgate-core` /
+`tollgate-protocol` consumed as **git deps from the Amperstrand fork**
+(`apps/bolty-esp32/Cargo.toml` → `rev c29a8b621f901cc356ea77d65d0db023d3aefee1`).
+It does not appear anywhere in §1–6.
+
+Its workspace had been **CI-dead since it gained sibling path deps**
+(`../../../tollgate-rs/...` — a checkout existing in no org repo; every CI cargo
+command died at resolution). As of 2026-10-21 (PR #6, merge
+`3e99ecfb47d089f67b4bf194d2b1137c49d73a3c`): path deps replaced by the pinned git
+dep, the `wifi_credentials` mod inlined behind compile-time env vars, CI excludes
+repaired (jobs excluded `bolty-esp32`; the package is named `tollgate-s3-rs` — the
+excludes had matched nothing since a rename), ureq 2→3, TLS stack bumped
+(rustls 0.23.46 / rustls-webpki 0.103.16 / webpki-roots 1.0.10). Main is green:
+CI + Deny + Security Audit all pass, 286 workspace tests, `cargo deny` 4/4.
+
+### 7.2 The Amperstrand fork is now a production dependency
+
+The pin exists because **`pricing` is fork-only**, exactly like `v1_compat/`:
+`crates/tollgate-core/src/pricing.rs` (7 pub items incl. `Price { per_second,
+per_unit }` + `cost_scaled`) exists on the fork's `experimental` branch and does
+**not** exist at `OpenTollGate/tollgate-rs` master. That upgrades the §2 hazard:
+the "one `rm -rf` from gone" bridge now has a sibling — production firmware pins
+the experimental fork's rev. The fork's own default branch (`experimental`) is
+**red** for unrelated pre-existing reasons (tollgate-net's unresolved `cdk`
+imports; audit backlog; PR #90 open with advisory lock bumps), i.e. a production
+dependency is being consumed from a repo whose main does not pass its own CI.
+
+### 7.3 `tollgate-module-basic-rust` is not dormant anymore — on a fork
+
+§1/§2/§5 track felixfelix-bot's original (18 commits, dormant since 2026-07-21).
+The rewrite continued on **`Amperstrand/tollgate-module-basic-rust`**
+(fork of the felixfelix-bot repo, **123 ahead / 33 behind**, last push 2026-10-08):
+Phases 0–13 complete — **438 tests** (210 default + 228 embedded-portal) — CDK
+**0.18** (not 0.17), WIP **Phase 14: physical OpenWrt hardware validation**, after
+which it replaces the Go binary. Capability-matrix cells for "basic-rust" in §5
+therefore describe the dormant ancestor, not the active line.
+
+### 7.4 `tollgate-rs-temp` archived
+
+`Amperstrand/tollgate-rs-temp` (24 commits, default branch `experimental`, stale
+since 2026-05-07) — an abandoned architecture spike (its core's
+`bootstrap/metering/wallet/adapter` modules are a divergent dead end; the
+surviving line redesigned them as `access/action/delivery`). Zero org references,
+zero PRs. Archived 2026-10-21; issues preserved read-only.
+
+### 7.5 PRTA hazard extension
+
+The §3 naming trap now has a stale-pointer sibling: `lib/backend.py` maps
+`rust-basic` / `rust-embedded` to **felixfelix-bot/tollgate-module-basic-rust —
+the dormant original** — while the active Phase-14 code lives on the Amperstrand
+fork. Phase 14 (hardware validation) cannot test the real line until that
+backend repo pointer moves. No rev pinning exists for any backend; artifacts are
+consumed from backend repos' *Build and Package* / *Build and Publish* workflow
+runs by branch.
+
+### Reproduce (2026-10-21 additions)
+
+```bash
+# pricing is fork-only (expect: not in be5400f / master)
+git clone https://github.com/OpenTollGate/tollgate-rs && cd tollgate-rs
+git cat-file -t master:crates/tollgate-core/src/pricing.rs   # fatal
+
+# the production pin
+git clone https://github.com/Amperstrand/tollgate-s3-rs
+grep -n "tollgate-rs-ai-research" tollgate-s3-rs/apps/bolty-esp32/Cargo.toml
+
+# the active module fork vs its dormant parent
+gh api repos/felixfelix-bot/tollgate-module-basic-rust/compare/main...Amperstrand:main \
+  --jq '.ahead_by, .behind_by'                                # 123 33
+
+# archive state
+gh repo view Amperstrand/tollgate-rs-temp --json isArchived  # true
+```
 
 ---
 
