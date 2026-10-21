@@ -5,7 +5,8 @@ they relate. Built because the fleet is larger than it looks — **six implement
 different protocols** — and the relationships were only discoverable by reading six repos.
 
 **Evidence date: 2026-10-18** (§1–6). **Update: 2026-10-21** (§7 — a seventh implementation went
-green, the Amperstrand fork became load-bearing, and the dormant Rust module woke up on a fork).
+green, the Amperstrand fork became the org's deliberate production home, and
+the dormant Rust module woke up on a fork).
 Every claim here is measured, not inferred from a README. Method and
 reproduction commands: [METHOD.md](METHOD.md).
 
@@ -300,17 +301,23 @@ excludes had matched nothing since a rename), ureq 2→3, TLS stack bumped
 (rustls 0.23.46 / rustls-webpki 0.103.16 / webpki-roots 1.0.10). Main is green:
 CI + Deny + Security Audit all pass, 286 workspace tests, `cargo deny` 4/4.
 
-### 7.2 The Amperstrand fork is now a production dependency
+### 7.2 The Amperstrand fork is now a production dependency — by org decision
 
 The pin exists because **`pricing` is fork-only**, exactly like `v1_compat/`:
 `crates/tollgate-core/src/pricing.rs` (7 pub items incl. `Price { per_second,
 per_unit }` + `cost_scaled`) exists on the fork's `experimental` branch and does
-**not** exist at `OpenTollGate/tollgate-rs` master. That upgrades the §2 hazard:
-the "one `rm -rf` from gone" bridge now has a sibling — production firmware pins
-the experimental fork's rev. The fork's own default branch (`experimental`) is
-**red** for unrelated pre-existing reasons (tollgate-net's unresolved `cdk`
-imports; audit backlog; PR #90 open with advisory lock bumps), i.e. a production
-dependency is being consumed from a repo whose main does not pass its own CI.
+**not** exist at `OpenTollGate/tollgate-rs` master. What §2 framed as a hazard
+to escape by upstreaming has since been resolved the other way: **the org keeps
+the fork as the production home** for these modules (OpenTollGate/tollgate-rs
+is not the org's to decide) and has hardened it accordingly — same day, the
+fork's `experimental` went from never-compiling-at-default-features to **fully
+green CI** (11 jobs: check/audit/no_std/image/MIPS + 7 integration suites,
+merge `071a717`, green tip `2a1a60b`), gained an audit policy
+(`.cargo/audit.toml`: 8 documented accepts — the rumqttc rustls-0.22/webpki-
+0.102 chain + rsa-Marvin), and the branch is now **protected** (no force
+pushes/deletions). The "one `rm -rf` from gone" risk is a backup concern now,
+not a governance gap; the fork-only modules (`v1_compat`, `pricing`) are
+deliberate org assets.
 
 ### 7.3 `tollgate-module-basic-rust` is not dormant anymore — on a fork, now migrating to the org
 
