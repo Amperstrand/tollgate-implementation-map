@@ -312,15 +312,26 @@ the experimental fork's rev. The fork's own default branch (`experimental`) is
 imports; audit backlog; PR #90 open with advisory lock bumps), i.e. a production
 dependency is being consumed from a repo whose main does not pass its own CI.
 
-### 7.3 `tollgate-module-basic-rust` is not dormant anymore — on a fork
+### 7.3 `tollgate-module-basic-rust` is not dormant anymore — on a fork, now migrating to the org
 
-§1/§2/§5 track felixfelix-bot's original (18 commits, dormant since 2026-07-21).
-The rewrite continued on **`Amperstrand/tollgate-module-basic-rust`**
-(fork of the felixfelix-bot repo, **123 ahead / 33 behind**, last push 2026-10-08):
-Phases 0–13 complete — **438 tests** (210 default + 228 embedded-portal) — CDK
-**0.18** (not 0.17), WIP **Phase 14: physical OpenWrt hardware validation**, after
-which it replaces the Go binary. Capability-matrix cells for "basic-rust" in §5
-therefore describe the dormant ancestor, not the active line.
+§1/§2/§5 tracked felixfelix-bot's original (18 commits, dormant since 2026-07-21).
+Three things happened since:
+
+1. The rewrite continued on **`Amperstrand/tollgate-module-basic-rust`**
+   (fork of the felixfelix-bot repo, **123 ahead / 33 behind** as of 2026-10-08):
+   Phases 0–13 complete — **438 tests** (210 default + 228 embedded-portal) —
+   CDK **0.18**, WIP **Phase 14: physical OpenWrt hardware validation**, after
+   which it replaces the Go binary.
+2. On **2026-10-20** felixfelix-bot reactivated the original and began
+   **migrating it into the OpenTollGate org**: `OpenTollGate/tollgate-module-basic-rust`
+   (fresh root repo, not a GitHub fork — carries the *original's* line: 14
+   commits, Phase-7 WIP, 58 tests, `Cross-compile + Package` workflow). The
+   org repo is now the canonical home.
+3. The Amperstrand fork's 123-commit lead is therefore **not yet in the
+   canonical repo** — the two lines must converge (fork → org PR) before
+   Phase 14's validation of the advanced line can happen against the
+   canonical home. Capability-matrix cells for "basic-rust" in §5 describe
+   the pre-migration ancestor.
 
 ### 7.4 `tollgate-rs-temp` archived
 
@@ -330,15 +341,21 @@ since 2026-05-07) — an abandoned architecture spike (its core's
 surviving line redesigned them as `access/action/delivery`). Zero org references,
 zero PRs. Archived 2026-10-21; issues preserved read-only.
 
-### 7.5 PRTA hazard extension
+### 7.5 PRTA hazards, updated
 
-The §3 naming trap now has a stale-pointer sibling: `lib/backend.py` maps
-`rust-basic` / `rust-embedded` to **felixfelix-bot/tollgate-module-basic-rust —
-the dormant original** — while the active Phase-14 code lives on the Amperstrand
-fork. Phase 14 (hardware validation) cannot test the real line until that
-backend repo pointer moves. No rev pinning exists for any backend; artifacts are
-consumed from backend repos' *Build and Package* / *Build and Publish* workflow
-runs by branch.
+The §3 naming trap got a stale-pointer sibling (same measurement, 2026-10-21):
+`lib/backend.py` mapped `rust-basic` / `rust-embedded` to the **dormant
+felixfelix-bot repo**, and every rust backend requested a workflow named
+`Build and Package` — a name that **matches no workflow in any rust backend
+repo** (the .ipk producers are: tgrs `Release`, org tollgate-rs `OpenWrt
+Package`, module repos `Cross-compile + Package`). Upstream PRTA has since
+added a `rust-v2` backend → `OpenTollGate/tollgate-rs` (partially resolving
+the original naming trap). Fix proposed in
+`OpenTollGate/physical-router-test-automation#312`: follow the module
+migration, per-backend measured workflow names, `TOLLGATE_BACKEND_REPO` /
+`TOLLGATE_BACKEND_WORKFLOW` overrides (needed until the fork→org module
+convergence lands). Artifacts are still consumed by branch with **no rev
+pinning** — the production-pinned-rev profile remains an open gap.
 
 ### Reproduce (2026-10-21 additions)
 
@@ -354,6 +371,11 @@ grep -n "tollgate-rs-ai-research" tollgate-s3-rs/apps/bolty-esp32/Cargo.toml
 # the active module fork vs its dormant parent
 gh api repos/felixfelix-bot/tollgate-module-basic-rust/compare/main...Amperstrand:main \
   --jq '.ahead_by, .behind_by'                                # 123 33
+
+# the org migration home (fresh root, original's line)
+gh api repos/OpenTollGate/tollgate-module-basic-rust/commits --jq 'length'  # 14
+gh api repos/OpenTollGate/tollgate-module-basic-rust/contents/README.md \
+  --jq .content | base64 -d | grep -m1 "Status"              # Phase 7 WIP
 
 # archive state
 gh repo view Amperstrand/tollgate-rs-temp --json isArchived  # true
